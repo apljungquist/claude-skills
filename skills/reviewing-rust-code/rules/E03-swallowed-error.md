@@ -1,0 +1,50 @@
+# Rule: swallowed-error
+
+**Severity:** warning
+
+## Problem
+
+An error value is silently discarded, hiding failures that should be logged, propagated, or handled.
+
+## Example
+
+### Bad
+```rust
+let _ = fs::remove_file(&path);
+
+let _ = sender.send(msg);
+
+if let Ok(value) = parse(input) {
+    use_value(value);
+}
+// Err case silently ignored
+```
+
+### Good
+```rust
+if let Err(e) = fs::remove_file(&path) {
+    log::warn!("Failed to clean up {}: {e}", path.display());
+}
+
+sender.send(msg).expect("receiver should be alive");
+
+match parse(input) {
+    Ok(value) => use_value(value),
+    Err(e) => return Err(e.into()),
+}
+```
+
+## When to flag
+
+- `let _ = expr` where `expr` returns `Result` and the error case matters for correctness or observability.
+- `.ok()` used to discard an error rather than intentionally converting to `Option`.
+- `if let Ok(x) = ...` without an `else` branch where the `Err` case has side effects or should be reported.
+- `_ =>` in a `match` on `Result` that silently swallows `Err` variants.
+
+## When NOT to flag
+
+- `let _ =` on a `Result` where the operation is best-effort (e.g., advisory locks, optional cleanup) and a comment explains why.
+- `.ok()` used to genuinely convert to `Option` for `?` or `.and_then()` chaining.
+- The surrounding function already handles the error path elsewhere.
+- Code is in a `Drop` implementation where panicking is not allowed.
+- Requiring explicit handling of every error adds verbosity; the goal is to ensure *important* errors are never silently lost.

@@ -1,0 +1,44 @@
+# Rule: catch-all-hides-variant
+
+**Severity:** warning
+
+## Problem
+
+A wildcard (`_` or `_ =>`) match arm silently handles enum variants that deserve explicit treatment. When new enum variants are added, they silently fall into the catch-all instead of getting dedicated handling, hiding bugs until runtime.
+
+## Example
+
+### Bad
+```rust
+match command {
+    Command::Start => start_service(),
+    Command::Stop => stop_service(),
+    _ => log::warn!("unknown command"),
+    // Command::Restart, Command::Reload are silently treated as "unknown"
+}
+```
+
+### Good
+```rust
+match command {
+    Command::Start => start_service(),
+    Command::Stop => stop_service(),
+    Command::Restart => restart_service(),
+    Command::Reload => reload_config(),
+}
+// Compiler will error when new variants are added
+```
+
+## When to flag
+
+- `_ =>` on an enum defined in the same crate (where exhaustive matching is possible).
+- Catch-all arm does something generic (log, return error) for an enum with variants that need specific handling.
+- New enum variants were added in the same diff but the match was not updated.
+- The catch-all arm's behavior would be incorrect for at least one existing variant it covers.
+
+## When NOT to flag
+
+- Enum is from an external crate marked `#[non_exhaustive]` — catch-all is required.
+- The catch-all genuinely applies to all unmatched variants (e.g., wildcard on a numeric status code).
+- Match is on a primitive type (bool, integer, char) where exhaustive listing is impractical.
+- The match is in test code doing pattern validation.

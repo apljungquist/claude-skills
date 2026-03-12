@@ -1,0 +1,51 @@
+# Rule: panic-in-library
+
+**Severity:** warning
+
+## Problem
+
+Library code panics instead of returning `Result`, forcing callers to either accept potential panics or wrap calls in `catch_unwind`. Libraries should let the caller decide how to handle errors.
+
+## Example
+
+### Bad
+```rust
+// In a library crate
+pub fn parse_config(input: &str) -> Config {
+    let parsed = serde_json::from_str(input)
+        .expect("invalid config JSON");  // Panics on bad input
+    if parsed.timeout == 0 {
+        panic!("timeout must be > 0");
+    }
+    parsed
+}
+```
+
+### Good
+```rust
+pub fn parse_config(input: &str) -> Result<Config, ConfigError> {
+    let parsed: Config = serde_json::from_str(input)
+        .map_err(ConfigError::InvalidJson)?;
+    if parsed.timeout == 0 {
+        return Err(ConfigError::InvalidTimeout);
+    }
+    Ok(parsed)
+}
+```
+
+## When to flag
+
+- `panic!()`, `.unwrap()`, `.expect()` in `pub fn` of a library crate on fallible operations.
+- `unreachable!()` in match arms that are actually reachable with certain inputs.
+- `assert!()` used for input validation in public APIs (should return `Result`).
+- `todo!()` or `unimplemented!()` in published/released library code.
+- Public function that can panic but has no `# Panics` section documenting the preconditions. If a function legitimately panics on violated preconditions, callers deserve to know exactly what those preconditions are (see also D10 `doc-contradicts-code`). Inspired by [Rust standard library safety documentation policy](https://github.com/rust-lang/std-dev-guide/blob/3158d0e090a3fd90ece1a9e6486bdf79d2a389d6/src/policy/safety-comments.md).
+
+## When NOT to flag
+
+- Binary crate (`main.rs`, CLI tools) where panicking is a valid error strategy.
+- `unwrap()` on `Mutex::lock()` — conventional in Rust.
+- `unwrap()` on provably-safe operations (e.g., `"literal".parse::<i32>().unwrap()`).
+- `debug_assert!()` — these only run in debug builds.
+- Panicking on violated type invariants that indicate a bug in the caller (documented in `# Panics`).
+- Panicking inside a validated newtype's methods where the constructor guarantees the invariant (e.g., `NonZeroUsize::get()` can't be zero) — the parse boundary already enforced correctness (see A28 `validate-then-forget`).

@@ -1,0 +1,45 @@
+# Rule: boolean-param-ambiguity
+
+**Severity:** suggestion
+
+## Problem
+
+A public function takes a bare `bool` parameter whose meaning is unclear at the call site, reducing readability and inviting mistakes. Callers transpose arguments or guess wrong, introducing bugs that compile successfully and pass type checking.
+
+## Example
+
+### Bad
+```rust
+pub fn connect(addr: &str, secure: bool, verbose: bool) -> Connection {
+    // ...
+}
+
+// At the call site:
+connect("localhost:8080", true, false);  // What do true and false mean?
+```
+
+### Good
+```rust
+pub enum Security { Tls, Plaintext }
+pub enum Verbosity { Verbose, Quiet }
+
+pub fn connect(addr: &str, security: Security, verbosity: Verbosity) -> Connection {
+    // ...
+}
+
+connect("localhost:8080", Security::Tls, Verbosity::Quiet);
+```
+
+## When to flag
+
+- Public function with a `bool` parameter whose meaning requires reading the signature to understand.
+- Multiple `bool` parameters on the same function — high risk of transposition.
+- `bool` parameter that controls fundamentally different behavior (not just a minor toggle).
+- `bool` parameter that represents a validated state (e.g., `is_verified: bool`) — a newtype or enum would make the valid/invalid distinction unrepresentable at the type level (see also A28 `validate-then-forget`).
+
+## When NOT to flag
+
+- Private/internal functions where the call site is close and obvious.
+- Single `bool` with a self-documenting name at the call site (e.g., `set_enabled(true)`).
+- Builder pattern methods like `.verbose(true)` where the method name provides context.
+- Functions where the `bool` meaning is universally understood (e.g., `recursive: bool` for file operations).

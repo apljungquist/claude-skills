@@ -1,0 +1,47 @@
+# Rule: missing-status-code
+
+**Severity:** warning
+
+## Problem
+
+Status code handling covers the success case and one or two error cases but misses others, causing unexpected responses to be treated as success or silently ignored. Retryable errors are treated as permanent failures, auth issues go undiagnosed, and rate limiting causes cascading errors instead of backoff.
+
+## Example
+
+### Bad
+```rust
+match response.status() {
+    StatusCode::OK => parse_body(response).await,
+    StatusCode::NOT_FOUND => Err(Error::NotFound),
+    _ => Err(Error::Unknown),
+    // 429 Too Many Requests should trigger retry
+    // 503 Service Unavailable should trigger retry
+    // 401/403 should trigger re-auth or give a clear error
+}
+```
+
+### Good
+```rust
+match response.status() {
+    StatusCode::OK => parse_body(response).await,
+    StatusCode::NOT_FOUND => Err(Error::NotFound),
+    StatusCode::UNAUTHORIZED | StatusCode::FORBIDDEN => Err(Error::AuthRequired),
+    StatusCode::TOO_MANY_REQUESTS | StatusCode::SERVICE_UNAVAILABLE => {
+        Err(Error::Retryable(response.status()))
+    }
+    status => Err(Error::Unexpected(status)),
+}
+```
+
+## When to flag
+
+- HTTP client code that matches on `200` and a catch-all but doesn't handle retryable status codes (429, 503).
+- Process exit code handling that checks `0` and treats everything else identically.
+- gRPC status handling that catches `OK` and one error but drops others.
+- The catch-all logs or returns a generic error for status codes that warrant specific handling.
+
+## When NOT to flag
+
+- The catch-all properly includes the status code in the error for debugging.
+- The code is a simple health-check or probe where detailed handling isn't needed.
+- Retry logic is handled at a higher layer (e.g., middleware, retry wrapper).

@@ -1,0 +1,44 @@
+# Rule: format-string-mismatch
+
+**Severity:** warning
+
+## Problem
+
+Format string placeholders don't match the intended arguments, producing misleading output. Unlike C's `printf`, Rust's `format!` won't compile with wrong argument counts, but positional/named argument mismatches and wrong Display vs Debug formatting can still occur. Log messages and user-facing output display wrong or misleading information, making debugging harder and potentially confusing users.
+
+## Example
+
+### Bad
+```rust
+log::info!("Processed {count} items from {source}", source = path, count = total);
+// Accidentally swapped: prints path as "count" label context is wrong
+
+println!("Error: {}", error);
+// Prints the Display impl, but the useful info is in Debug
+// e.g., anyhow errors show only the top-level message with Display
+
+log::debug!("Request: {:?}", large_response);
+// Logging the response instead of the request (copy-paste error)
+```
+
+### Good
+```rust
+log::info!("Processed {total} items from {path}");
+
+println!("Error: {error:?}");
+
+log::debug!("Request: {request:?}");
+```
+
+## When to flag
+
+- Named format arguments where the names suggest the values are in the wrong positions.
+- `{}` (Display) used for error types where `{:?}` (Debug) would preserve more context.
+- Copy-paste evidence: variable name in the format string doesn't match the argument variable.
+- Format string describes one thing (e.g., "request") but the argument is another (e.g., `response`).
+
+## When NOT to flag
+
+- Display vs Debug choice is a matter of style preference.
+- Format strings in tests where exact output doesn't matter.
+- Logging macros that handle formatting internally (e.g., `tracing`'s field syntax).

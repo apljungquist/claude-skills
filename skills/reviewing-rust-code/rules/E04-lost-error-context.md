@@ -1,0 +1,40 @@
+# Rule: lost-error-context
+
+**Severity:** warning
+
+## Problem
+
+An error is mapped or wrapped in a way that discards the original cause, making debugging difficult. When the error surfaces in logs or user-facing messages, the original cause is gone, turning debugging into guesswork.
+
+## Example
+
+### Bad
+```rust
+let file = File::open(&path)
+    .map_err(|_| anyhow!("failed to open file"))?;
+
+let value: Config = serde_json::from_str(&data)
+    .map_err(|_| MyError::ParseFailed)?;
+```
+
+### Good
+```rust
+let file = File::open(&path)
+    .with_context(|| format!("failed to open {}", path.display()))?;
+
+let value: Config = serde_json::from_str(&data)
+    .map_err(|e| MyError::ParseFailed { source: e, path: path.clone() })?;
+```
+
+## When to flag
+
+- `map_err(|_| ...)` that discards the original error with `_`.
+- `map_err` that creates a new error without chaining or including the source.
+- `anyhow!("message")` or `bail!("message")` replacing a caught error without `.context()` or `.with_context()`.
+- Custom error construction that has a `source` field but leaves it as `None`.
+
+## When NOT to flag
+
+- Intentional error sanitization for security (e.g., not leaking internal details to API consumers).
+- Mapping between error types where the source error genuinely adds no useful info (e.g., `Infallible`).
+- The error message includes enough detail (e.g., the file path, input value) to diagnose without the original.

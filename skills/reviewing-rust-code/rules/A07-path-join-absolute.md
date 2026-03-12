@@ -1,0 +1,37 @@
+# Rule: path-join-absolute
+
+**Severity:** warning
+
+## Problem
+
+`Path::join()` replaces the entire base path when the argument is absolute. This is by design but frequently surprising, and can lead to path traversal or silently wrong file locations. The program silently operates on the wrong file, which can cause data loss or, in server contexts, path traversal vulnerabilities.
+
+## Example
+
+### Bad
+```rust
+let base = PathBuf::from("/var/data");
+let user_file = base.join(user_input);
+// If user_input is "/etc/passwd", result is "/etc/passwd", not "/var/data/etc/passwd"
+```
+
+### Good
+```rust
+let base = PathBuf::from("/var/data");
+let cleaned = user_input.strip_prefix("/").unwrap_or(user_input);
+let user_file = base.join(cleaned);
+// Ensure result is still under base
+assert!(user_file.starts_with(&base));
+```
+
+## When to flag
+
+- `.join()` called with a variable that could contain an absolute path (user input, config values, deserialized data).
+- `.join()` with a string literal starting with `/`.
+- Path construction from external input without subsequent `starts_with()` or canonicalization check.
+
+## When NOT to flag
+
+- `.join()` with known-relative literal segments (e.g., `.join("src").join("main.rs")`).
+- The joined path is validated with `starts_with()` or `canonicalize()` immediately after.
+- The function is specifically designed to accept and handle absolute paths.

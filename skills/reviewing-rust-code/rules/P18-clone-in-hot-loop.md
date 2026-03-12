@@ -1,0 +1,51 @@
+# Rule: clone-in-hot-loop
+
+**Severity:** warning
+
+## Problem
+
+`.clone()`, `.to_string()`, or `.to_owned()` called inside a loop when borrowing or reusing an allocation would avoid repeated heap allocations. Each iteration allocates and copies heap data unnecessarily, degrading throughput and increasing GC/allocator pressure in high-volume code paths.
+
+## Example
+
+### Bad
+```rust
+for item in &items {
+    let key = prefix.clone() + &item.name;  // Clones prefix every iteration
+    map.insert(key, item.value);
+}
+
+for line in reader.lines() {
+    let tag = config.tag.to_string();  // Same allocation every iteration
+    output.push(format!("[{tag}] {}", line?));
+}
+```
+
+### Good
+```rust
+for item in &items {
+    let mut key = prefix.clone();
+    key.push_str(&item.name);
+    map.insert(key, item.value);
+}
+// Or better: use &str keys if the map allows it
+
+let tag = config.tag.to_string();  // Hoist out of loop
+for line in reader.lines() {
+    output.push(format!("[{tag}] {}", line?));
+}
+```
+
+## When to flag
+
+- `.clone()` inside a loop on a value that doesn't change between iterations (hoist it).
+- `.to_string()` or `.to_owned()` on the same `&str` every iteration.
+- `.clone()` to satisfy ownership when a borrow would work (e.g., cloning just to pass to a function that takes `&T`).
+- Cloning large types (Vec, String, HashMap) inside loops processing many items.
+
+## When NOT to flag
+
+- `.clone()` on `Arc`, `Rc`, or other cheap-to-clone types.
+- `.clone()` needed because the value is modified or moved each iteration.
+- Loop runs a small, bounded number of iterations (e.g., iterating over a 3-element config).
+- Code is not on a hot path (e.g., startup, CLI argument processing).

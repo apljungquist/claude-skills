@@ -1,0 +1,54 @@
+# Rule: deref-polymorphism
+
+**Severity:** warning
+
+## Problem
+
+`Deref`/`DerefMut` is implemented on a non-smart-pointer type to emulate struct inheritance, exposing all methods of the inner type on the outer type. This creates a confusing API, defeats type safety, and makes refactoring fragile. The outer type inherits methods that don't make semantic sense, callers accidentally use inner-type methods, and refactoring the inner type breaks the outer type's API surface unpredictably.
+
+## Example
+
+### Bad
+```rust
+struct Admin {
+    user: User,
+}
+
+impl Deref for Admin {
+    type Target = User;
+    fn deref(&self) -> &User {
+        &self.user
+    }
+}
+
+// Now admin.username() works "magically" — but Admin is not a User
+```
+
+### Good
+```rust
+struct Admin {
+    user: User,
+}
+
+impl Admin {
+    fn username(&self) -> &str {
+        self.user.username()
+    }
+
+    // Delegate only the methods that make sense for Admin
+}
+
+// Or use a trait if polymorphism is needed
+```
+
+## When to flag
+
+- `impl Deref for MyStruct` where `MyStruct` is not a smart pointer, wrapper, or newtype with clear deref semantics.
+- The `Target` type is a domain struct/type (not a primitive, slice, or standard library container).
+- The outer type adds fields or behavior beyond what the inner type provides, creating a pseudo-inheritance hierarchy.
+
+## When NOT to flag
+
+- Smart pointer patterns (`Box`-like, `Arc`-like, `Rc`-like custom wrappers).
+- Newtype wrappers that intentionally expose the inner type's API (e.g., `struct Meters(f64)` → `Deref<Target=f64>`).
+- Types wrapping `Vec`, `String`, `[T]` or `str` for domain-specific collections.

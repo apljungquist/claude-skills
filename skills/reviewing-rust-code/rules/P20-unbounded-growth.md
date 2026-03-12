@@ -1,0 +1,46 @@
+# Rule: unbounded-growth
+
+**Severity:** warning
+
+## Problem
+
+A collection grows without any size limit, capacity hint, or eviction strategy, potentially consuming unbounded memory over time. In long-running services, memory usage grows monotonically until the process is OOM-killed, causing downtime.
+
+## Example
+
+### Bad
+```rust
+let mut cache: HashMap<String, Response> = HashMap::new();
+
+async fn handle(req: Request) -> Response {
+    let key = req.url().to_string();
+    if let Some(resp) = cache.get(&key) {
+        return resp.clone();
+    }
+    let resp = fetch(req).await;
+    cache.insert(key, resp.clone());  // Never evicts — grows forever
+    resp
+}
+```
+
+### Good
+```rust
+use lru::LruCache;
+let mut cache: LruCache<String, Response> = LruCache::new(
+    NonZeroUsize::new(10_000).unwrap()
+);
+```
+
+## When to flag
+
+- `HashMap`/`Vec`/`BTreeMap` used as a cache that is populated in a loop or request handler but never cleared or bounded.
+- `.push()` or `.insert()` in a long-running loop without `.reserve()`, `.shrink_to_fit()`, or size checks.
+- Event log or history buffer that grows with each event and is never trimmed.
+- The collection is behind a global/static (`lazy_static`, `OnceLock`) and only has insert operations.
+
+## When NOT to flag
+
+- Collection is populated once during initialization and not modified after.
+- Collection size is bounded by design (e.g., one entry per enum variant, per config key).
+- Code is in a short-lived CLI tool or batch process.
+- An eviction or cleanup mechanism exists elsewhere in the code.
