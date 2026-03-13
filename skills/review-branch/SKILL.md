@@ -1,7 +1,7 @@
 ---
 name: review-branch
 description: Reviews the checked out branch before rebase merging
-allowed-tools: git show:*
+allowed-tools: Bash(git show:*), Read, Skill
 disable-model-invocation: true
 ---
 
@@ -13,7 +13,8 @@ Report any deviations from the guidelines below.
 It is not part of the code review to run any tests or static analysis.
 Any problems that would be detected by the tests or the linter are out of scope for the code review.
 
-Consider all guidelines from code- or domain-specific reviewing skills.
+Invoke all applicable language- or domain-specific reviewing skills (e.g., reviewing-rust-code) using the Skill tool before starting the review.
+If a guideline has a code, include it in the output.
 
 ## Guidelines
 
@@ -28,7 +29,6 @@ Conversely, every statement made in the commit message MUST be true, or at least
 Deviations from existing patterns MUST be motivated in the PR description.
 
 When it comes to tests, quality matters more than quantity.
-
 
 ## Output Format
 
