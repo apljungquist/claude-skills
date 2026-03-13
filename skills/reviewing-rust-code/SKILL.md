@@ -174,6 +174,9 @@ read the full rule file at `rules/<id>.md` (e.g., `rules/L001.md`).
 - **A049** `prefer-cfg-macro` — `#[cfg(...)]` used where `cfg!()` in an `if` would allow both branches to be type-checked.
   Look for: duplicate function definitions guarded by `#[cfg(X)]` and `#[cfg(not(X))]`.
 
+- **A050** `invariant-leaking-module-boundary` — Type with invariants has pub fields or unchecked constructors.
+  Look for: `pub` fields on types with documented invariants, public tuple struct newtypes without validation.
+
 ### Numeric Safety
 
 - **N026** `integer-overflow-in-release` — Arithmetic on user-influenced integers that silently wraps in release mode.
