@@ -19,6 +19,15 @@ For rules that seem applicable, read the full rule file in `rules/<code>.md` (e.
 - **L02** `inverted-condition` — Boolean condition that is the opposite of what surrounding logic expects.
   Look for: `if ! ...`, guard clauses, early returns.
 
+- **L30** `unbounded-recursion` — Recursive function without a depth limit processing external input, risking stack overflow.
+  Look for: recursive `fn` without a depth/fuel parameter, especially on parsed or deserialized data.
+
+- **L31** `loop-without-exit-bound` — `loop` or `while` without a clear upper bound on iterations.
+  Look for: `loop { ... }`, `while` with external-state-dependent condition, retry loops without max attempts.
+
+- **L33** `missing-invariant-assertion` — Function relies on invariants the type system cannot express but does not assert them.
+  Look for: doc comments mentioning "sorted", "non-empty", "normalized" without corresponding `debug_assert!`.
+
 ### Error Handling
 
 - **E03** `swallowed-error` — Error value silently discarded via `let _ =`, `.ok()`, or `_ =>`.
@@ -55,6 +64,9 @@ For rules that seem applicable, read the full rule file in `rules/<code>.md` (e.
 - **D12** `stale-todo-or-fixme` — TODO/FIXME comment that refers to work already done or no longer relevant.
   Look for: `TODO`, `FIXME`, `HACK`, `XXX`.
 
+- **D36** `suppressed-warning` — `#[allow(...)]` that hides a real issue instead of fixing it.
+  Look for: `#[allow(dead_code)]`, `#[allow(unused_*)]`, `#[allow(clippy::...)]` without justification.
+
 ### Incomplete Logic
 
 - **I13** `catch-all-hides-variant` — Wildcard match arm silently handles enum variants that deserve explicit handling.
@@ -73,6 +85,12 @@ For rules that seem applicable, read the full rule file in `rules/<code>.md` (e.
 
 - **N17** `boolean-param-ambiguity` — Public function with bare `bool` parameter whose meaning is unclear at call sites.
   Look for: `fn foo(..., bool)` in public APIs.
+
+- **N32** `excessive-function-length` — Function too long to review as a single unit.
+  Look for: functions exceeding ~60 lines of executable code, multiple separable responsibilities.
+
+- **N34** `complex-macro` — Macro complex enough to hinder readability, tooling, and error messages.
+  Look for: nested macro definitions, macros generating `impl` blocks, macros replacing generic functions.
 
 ### Performance (high bar)
 
@@ -110,6 +128,9 @@ For rules that seem applicable, read the full rule file in `rules/<code>.md` (e.
 - **A29** `broad-from-for-newtype` — `From<primitive>` implemented for a domain-specific newtype, enabling silent type confusion via `.into()`.
   Look for: `impl From<u32>`, `impl From<String>` for ID/handle/token types.
 
+- **A37** `missing-must-use` — Public function or type where ignoring the return value is likely a bug, but `#[must_use]` is absent.
+  Look for: builder types/methods returning `Self`, pure functions, functions returning guards or status booleans.
+
 ### Numeric Safety
 
 - **N26** `integer-overflow-in-release` — Arithmetic on user-influenced integers that silently wraps in release mode.
@@ -119,6 +140,9 @@ For rules that seem applicable, read the full rule file in `rules/<code>.md` (e.
 
 - **S27** `unsanitized-path-input` — User-provided string used in file path construction without canonicalization/validation.
   Look for: `Path::new(user_input)`, `.join(user_input)`.
+
+- **S35** `unnecessary-unsafe` — `unsafe` block where a safe alternative exists, or `unsafe` that is broader than needed.
+  Look for: `unsafe { ... }` with safe equivalents, oversized `unsafe` blocks, `get_unchecked` without profiling justification.
 
 ## Out of Scope
 
