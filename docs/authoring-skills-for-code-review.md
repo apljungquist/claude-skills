@@ -44,14 +44,14 @@ When starting out, make everything a default and promote individually.
 
 Consult the rule index below.
 For rules that seem applicable,
-read the full rule file at `rules/<id>.md`.
+read the full rule file at `reference/<id>.md`.
 ```
 
 **Guideline index** lists every guideline
 with enough information to decide whether to read the full file.
 Each entry follows this format:
 
-    - **E003** `swallowed-error` — Error value silently discarded.
+    - **[E003](reference/E003.md)** `swallowed-error` — Error value silently discarded.
       Look for: `let _ =`, `.ok()`, `if let Ok` without else.
 
 The "Look for" hints help Claude and humans quickly decide if a rule is relevant.
@@ -218,3 +218,20 @@ the reader knows what to avoid but not what to write instead.
 **One sentence per line.**
 Commas are also good split points.
 This makes diffs cleaner and review easier.
+
+# Things to incorporate in the above document
+
+Keep important things at the top to allow Claude to preview using HEAD.
+Source: https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#structure-longer-reference-files-with-table-of-contents
+
+Think of each guideline as a scientific hypothesis: it should be falsifiable.
+This applies in particular to pros and cons which must either be obvious or reference a source that makes a convincing case for its truthfulness.
+Such references may come from a different part of the same document, this project or anywhere on the internet. 
+
+Have a related work section at the bottom with references to inspiration.
+
+New guidelines: should use return value from function called
+In particular when the function returns `()`, but this is not obvious.
+In such cases the returned value should be destructured: `let () = my_function()?`.
+This makes it clear that the `Ok` variant does not contain important information that must be used.
+Question to answer when writing this: If the function did return an important value in `Ok`, could the must-use nature be enforced by the function author?

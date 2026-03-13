@@ -30,6 +30,8 @@ In the footnote definition, write the URL directly (`[^1]: https://...`),
 not as a markdown link (`[^1]: [title](https://...)`).
 This keeps the prose readable and groups URLs at the bottom of the file.
 
+Every footnote must be referenced or it will not be rendered.
+
 [^1]: https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#naming-conventions
 [^2]: https://agentskills.io/specification
 [^3]: https://platform.claude.com/docs/en/agents-and-tools/agent-skills/best-practices#naming-conventions
