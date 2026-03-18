@@ -6,7 +6,10 @@ SKILLS_SRC="$SCRIPT_DIR/skills"
 SKILLS_DST="${HOME}/.claude/skills"
 
 # Discover available skills
-mapfile -t skills < <(find "$SKILLS_SRC" -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+skills=()
+while IFS= read -r d; do
+    skills+=("$(basename "$d")")
+done < <(find "$SKILLS_SRC" -mindepth 1 -maxdepth 1 -type d | sort)
 
 if [[ ${#skills[@]} -eq 0 ]]; then
     echo "No skills found in $SKILLS_SRC"
