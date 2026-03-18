@@ -32,25 +32,25 @@ When it comes to tests, quality matters more than quantity.
 
 ## Output Format
 
-List all issues in ascending order of importance (most important last).
-The importance should be one of:
+Use exactly this heading format per finding:
+```
+### {emoji} `{commit-id}` [{guideline-code}] `{file}:{line}`
+```
+
+Example:
+```
+### 🔴 `a1b2c3d` [A003] `src/auth.rs:88`
+```
+
+If no existing _guideline-code_ applies, make up a descriptive identifier.
+Always use the full 7-character commit hash.
+
+The _emoji_ must be one of:
 - 🟢 (Good)
 - 🟡 (May fix)
 - 🟠 (Should fix)
 - 🔴 (Must fix)
 
-Include only the traffic light, not the text.
+When reviewing the commit message, use `.git/COMMIT_EDITMSG` as the _file_.
 
-Use this template:
-
-```markdown
-# Code Review
-
-### <importance> `<commit-id>` <summary> `<file>:<line>`
-
-<explanation of what the issue is>
-
-<expanation of why it is important>
-
-<suggestion for how to imrpove the code>
-```
+Order the findings in ascending order of importance (most important last).

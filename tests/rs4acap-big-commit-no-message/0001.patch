@@ -1,0 +1,1627 @@
+From 3a6b590bd76d42c84da5b66768a0f8145ea0301e Mon Sep 17 00:00:00 2001
+From: AP Ljungquist <ap@ljungquist.eu>
+Date: Sun, 1 Mar 2026 13:20:27 +0100
+Subject: [PATCH] feat(vapix): Add remote object storage 1 beta
+
+---
+ crates/vapix/Cargo.toml                       |   1 +
+ crates/vapix/src/apis.rs                      |   8 +
+ crates/vapix/src/cassette.rs                  | 215 ++++++++++++
+ crates/vapix/src/config.rs                    |   1 +
+ .../src/config/remote_object_storage_1.rs     |   1 +
+ .../config/remote_object_storage_1_beta.rs    | 230 ++++++++++++
+ crates/vapix/src/lib.rs                       |   4 +-
+ crates/vapix/src/rest.rs                      | 116 +++++-
+ crates/vapix/src/rest_http.rs                 |  28 +-
+ crates/vapix/src/rest_http2.rs                |  33 ++
+ crates/vapix/tests/cassette_tests.rs          | 330 ++++++++++++++++++
+ .../000-ee7522cab0799274-request              |  12 +
+ .../000-ee7522cab0799274-response             |  15 +
+ .../001-ee7522cab0799274-request              |  12 +
+ .../001-ee7522cab0799274-response             |   9 +
+ .../002-a3de4da543b0a815-request              |   1 +
+ .../002-a3de4da543b0a815-response             |   5 +
+ .../000-a3de4da543b0a815-request              |   1 +
+ .../000-a3de4da543b0a815-response             |   9 +
+ .../000-1996683a7c16ece6-request              |  12 +
+ .../000-1996683a7c16ece6-response             |   9 +
+ .../000-b391856eca471331-request              |  13 +
+ .../000-b391856eca471331-response             |  16 +
+ .../001-a19db7f3b617d6d3-request              |   1 +
+ .../001-a19db7f3b617d6d3-response             |  29 ++
+ .../002-eafc73118da8d7f3-request              |  11 +
+ .../002-eafc73118da8d7f3-response             |   5 +
+ .../003-62deafaf1fe49900-request              |   5 +
+ .../003-62deafaf1fe49900-response             |   5 +
+ .../004-a19db7f3b617d6d3-request              |   1 +
+ .../004-a19db7f3b617d6d3-response             |  29 ++
+ .../005-a3de4da543b0a815-request              |   1 +
+ .../005-a3de4da543b0a815-response             |   5 +
+ .../006-a19db7f3b617d6d3-request              |   1 +
+ .../006-a19db7f3b617d6d3-response             |  18 +
+ crates/vapix/tests/smoke_tests.rs             |  33 +-
+ 36 files changed, 1198 insertions(+), 27 deletions(-)
+ create mode 100644 crates/vapix/src/cassette.rs
+ create mode 100644 crates/vapix/src/config/remote_object_storage_1_beta.rs
+ create mode 100644 crates/vapix/src/rest_http2.rs
+ create mode 100644 crates/vapix/tests/cassette_tests.rs
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/000-ee7522cab0799274-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/000-ee7522cab0799274-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/001-ee7522cab0799274-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/001-ee7522cab0799274-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/002-a3de4da543b0a815-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/002-a3de4da543b0a815-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_does_not_exist/000-a3de4da543b0a815-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_does_not_exist/000-a3de4da543b0a815-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_validation_error/000-1996683a7c16ece6-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/device_configuration_validation_error/000-1996683a7c16ece6-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/000-b391856eca471331-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/000-b391856eca471331-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/001-a19db7f3b617d6d3-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/001-a19db7f3b617d6d3-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/002-eafc73118da8d7f3-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/002-eafc73118da8d7f3-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/003-62deafaf1fe49900-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/003-62deafaf1fe49900-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/004-a19db7f3b617d6d3-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/004-a19db7f3b617d6d3-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/005-a3de4da543b0a815-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/005-a3de4da543b0a815-response
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/006-a19db7f3b617d6d3-request
+ create mode 100644 crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/006-a19db7f3b617d6d3-response
+
+diff --git a/crates/vapix/Cargo.toml b/crates/vapix/Cargo.toml
+index f457908..4bdc690 100644
+--- a/crates/vapix/Cargo.toml
++++ b/crates/vapix/Cargo.toml
+@@ -16,6 +16,7 @@ quick-xml = { workspace = true, features = ["serialize"] }
+ rs4a-dut = { workspace = true }
+ serde_json = { workspace = true, features = ["raw_value"] }
+ thiserror = { workspace = true }
++tokio = { workspace = true }
+ url = { workspace = true }
+ 
+ [dev-dependencies]
+diff --git a/crates/vapix/src/apis.rs b/crates/vapix/src/apis.rs
+index 3e3d3a2..059371f 100644
+--- a/crates/vapix/src/apis.rs
++++ b/crates/vapix/src/apis.rs
+@@ -16,9 +16,17 @@ pub mod jpg_3 {
+ }
+ 
+ pub mod remote_object_storage_1 {
++    #[allow(deprecated)]
+     pub use crate::config::remote_object_storage_1::create_destinations;
+ }
+ 
++pub mod remote_object_storage_1_beta {
++    pub use crate::config::remote_object_storage_1_beta::{
++        CreateDestinationRequest, DeleteDestinationRequest, ListDestinationsRequest,
++        UpdateDestinationRequest,
++    };
++}
++
+ pub mod recording_group_1 {
+     pub use crate::config::recording_group_1::create_recording_groups;
+ }
+diff --git a/crates/vapix/src/cassette.rs b/crates/vapix/src/cassette.rs
+new file mode 100644
+index 0000000..6be03e9
+--- /dev/null
++++ b/crates/vapix/src/cassette.rs
+@@ -0,0 +1,215 @@
++//! Record and replay sequences of HTTP requests and responses.
++use std::{
++    fs,
++    fs::create_dir_all,
++    hash::{DefaultHasher, Hash, Hasher},
++    path::{Path, PathBuf},
++    str::FromStr,
++};
++
++use anyhow::Context;
++use log::debug;
++use reqwest::{Method, StatusCode};
++
++use crate::{http::Error, Client};
++
++#[derive(Debug)]
++pub struct Request {
++    method: Method,
++    path: String,
++    body: Option<String>,
++}
++
++impl Request {
++    pub fn new(method: Method, path: String) -> Self {
++        Self {
++            method,
++            path,
++            body: None,
++        }
++    }
++
++    pub fn body(mut self, body: String) -> Self {
++        self.body = Some(body);
++        self
++    }
++
++    fn write(&self, file: &Path) -> anyhow::Result<()> {
++        let Self { method, path, body } = self;
++        let () = create_dir_all(file.parent().context("the file has no parent")?)?;
++        let () = match body {
++            None => fs::write(file, format!("{method} {path}\n")),
++            Some(body) => fs::write(file, format!("{method} {path}\n\n{body}")),
++        }
++        .with_context(|| format!("Could not write file {file:?}"))?;
++
++        Ok(())
++    }
++
++    fn checksum(&self) -> u64 {
++        let Self { method, path, body } = self;
++
++        // The `DefaultHasher` is not guaranteed to be stable across rust versions.
++        // If it changes, all cassettes tracked in VCS will be invalidated.
++        // TODO: Use a stable hashing algorithm.
++
++        let mut hasher = DefaultHasher::new();
++        method.hash(&mut hasher);
++        path.hash(&mut hasher);
++        if let Some(body) = body {
++            body.hash(&mut hasher);
++        }
++        hasher.finish()
++    }
++
++    // TODO: Make passing the client optional when reading from a cassette
++    /// Sends the request and returns a future response.
++    ///
++    /// # Panics
++    ///
++    /// This method panics if reading from or writing to a provided cassette fails.
++    pub async fn send<T>(
++        self,
++        client: &Client,
++        cassette: Option<&mut Cassette>,
++    ) -> Result<Response, Error<T>> {
++        let response_file = match cassette {
++            Some(cassette) => {
++                // PANICS:
++                // Unwrapping is acceptable when a cassette is provided as stated in the docstring.
++                cassette.advance();
++                let checksum = self.checksum();
++                match cassette.mode {
++                    Mode::Read => {
++                        let file = cassette.response_file(checksum);
++                        debug!("Reading response from the cassette file {file:?}");
++                        return Ok(Response::read(&file).unwrap());
++                    }
++                    Mode::Write => {
++                        let file = cassette.request_file(checksum);
++                        debug!("Writing request to the cassette file {file:?}");
++                        self.write(&file).unwrap();
++                        Some(cassette.response_file(checksum))
++                    }
++                }
++            }
++            None => None,
++        };
++
++        let mut request_builder = client
++            .request(self.method, &self.path)
++            .map_err(Error::Request)?;
++        if let Some(body) = self.body {
++            request_builder = request_builder.body(body);
++        }
++        let response = request_builder
++            .send()
++            .await
++            .context("failed to send")
++            .map_err(Error::Transport)?;
++        let response = Response {
++            status: response.status(),
++            body: response.text().await,
++        };
++
++        if let Some(file) = response_file {
++            // PANICS:
++            // Unwrapping is acceptable when a cassette is provided as stated in the docstring and
++            // `response_file` is set only when a cassette is provided.
++            debug!("Writing response to the cassette file {file:?}");
++            response.write(&file).unwrap();
++        }
++
++        Ok(response)
++    }
++}
++
++#[derive(Debug)]
++pub struct Response {
++    pub status: StatusCode,
++    pub body: Result<String, reqwest::Error>,
++}
++
++impl Response {
++    fn read(file: &Path) -> anyhow::Result<Self> {
++        let content = fs::read_to_string(file)
++            .with_context(|| format!("Could not read the file {file:?}"))?;
++        let (status, body) = content
++            .split_once("\n\n")
++            .context("Could not split response")?;
++        let code = status
++            .split_whitespace()
++            .next()
++            .context("Could not get status code")?;
++
++        Ok(Self {
++            status: StatusCode::from_str(code).context("Could not parse status code")?,
++            body: Ok(body.to_string()),
++        })
++    }
++
++    fn write(&self, file: &Path) -> anyhow::Result<()> {
++        let Self { status, body } = self;
++        let Ok(body) = body else {
++            unimplemented!();
++        };
++        let content = format!("{status}\n\n{body}");
++
++        let () = create_dir_all(file.parent().context("the file has no parent")?)?;
++        let () = fs::write(file, content)
++            .with_context(|| format!("Could not write the file {file:?}"))?;
++
++        Ok(())
++    }
++}
++
++#[derive(Clone, Copy, Debug)]
++pub enum Mode {
++    Read,
++    Write,
++}
++
++#[derive(Clone, Debug)]
++pub struct Cassette {
++    dir: PathBuf,
++    request_number: i8,
++    mode: Mode,
++}
++
++impl Cassette {
++    pub fn new(dir: PathBuf, mode: Mode) -> Self {
++        Self {
++            dir,
++            request_number: -1,
++            mode,
++        }
++    }
++
++    pub fn clear(&self) -> anyhow::Result<()> {
++        match fs::remove_dir_all(self.dir.as_path()) {
++            Ok(_) => Ok(()),
++            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(()),
++            Err(e) => Err(e.into()),
++        }
++    }
++}
++
++impl Cassette {
++    fn advance(&mut self) {
++        self.request_number += 1;
++    }
++
++    fn request_file(&self, checksum: u64) -> PathBuf {
++        self.dir.join(format!(
++            "{:>03}-{checksum:016x}-request",
++            self.request_number
++        ))
++    }
++
++    fn response_file(&self, checksum: u64) -> PathBuf {
++        self.dir.join(format!(
++            "{:>03}-{checksum:016x}-response",
++            self.request_number
++        ))
++    }
++}
+diff --git a/crates/vapix/src/config.rs b/crates/vapix/src/config.rs
+index 3726c5d..010f612 100644
+--- a/crates/vapix/src/config.rs
++++ b/crates/vapix/src/config.rs
+@@ -1,3 +1,4 @@
+ pub mod recording_group_1;
+ pub mod remote_object_storage_1;
++pub mod remote_object_storage_1_beta;
+ pub mod ssh_1;
+diff --git a/crates/vapix/src/config/remote_object_storage_1.rs b/crates/vapix/src/config/remote_object_storage_1.rs
+index d201afd..5bb2424 100644
+--- a/crates/vapix/src/config/remote_object_storage_1.rs
++++ b/crates/vapix/src/config/remote_object_storage_1.rs
+@@ -8,6 +8,7 @@ pub struct CreateDestinationResponse {
+     pub id: String,
+ }
+ 
++#[deprecated]
+ pub fn create_destinations() -> RequestBuilder<CreateDestinationResponse> {
+     RequestBuilder::new("config/rest/remote-object-storage/v1beta/destinations")
+ }
+diff --git a/crates/vapix/src/config/remote_object_storage_1_beta.rs b/crates/vapix/src/config/remote_object_storage_1_beta.rs
+new file mode 100644
+index 0000000..fa312db
+--- /dev/null
++++ b/crates/vapix/src/config/remote_object_storage_1_beta.rs
+@@ -0,0 +1,230 @@
++//! The [Remote Object Storage API] (beta).
++//!
++//! [Remote Object Storage API]: https://developer.axis.com/vapix/device-configuration/remote-object-storage-api/
++
++use reqwest::Method;
++use serde_json::json;
++use url::Url;
++
++use crate::{cassette::Request, rest_http2::RestHttp2};
++
++const BASE_PATH: &str = "config/rest/remote-object-storage/v1beta/destinations";
++
++// Scalars
++
++#[derive(Clone, Debug, Eq, PartialEq, serde::Deserialize, serde::Serialize)]
++pub struct DestinationId(String);
++
++impl DestinationId {
++    pub fn new(id: String) -> Self {
++        Self(id)
++    }
++
++    pub fn into_string(self) -> String {
++        self.0
++    }
++
++    pub fn as_str(&self) -> &str {
++        self.0.as_str()
++    }
++}
++
++// Objects (used by both requests and responses)
++
++#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct AzureDestination {
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub account_name: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub container: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub url: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub shared_key: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub sas: Option<String>,
++}
++
++impl AzureDestination {
++    pub fn new(container: String, sas: String, url: Url) -> Self {
++        Self {
++            account_name: None,
++            container: Some(container),
++            url: Some(url.to_string()),
++            shared_key: None,
++            sas: Some(sas),
++        }
++    }
++}
++
++#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
++#[serde(rename_all = "camelCase")]
++pub struct S3Destination {
++    pub bucket: String,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub region: Option<String>,
++    pub url: String,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub access_key_id: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub secret_access_key: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub session_token: Option<String>,
++}
++
++// Objects (used only by responses)
++
++#[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct DestinationData {
++    pub id: DestinationId,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub description: Option<String>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub azure: Option<AzureDestination>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    pub s3: Option<S3Destination>,
++}
++
++// Objects (used only by requests)
++
++#[derive(Debug, serde::Deserialize, serde::Serialize)]
++#[serde(rename_all = "camelCase")]
++pub struct CreateDestinationData {
++    id: DestinationId,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    azure: Option<AzureDestination>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    s3: Option<S3Destination>,
++    #[serde(default, skip_serializing_if = "Option::is_none")]
++    description: Option<String>,
++}
++
++// Requests
++
++#[derive(Debug)]
++pub struct CreateDestinationRequest {
++    data: CreateDestinationData,
++}
++
++impl CreateDestinationRequest {
++    pub fn description(mut self, description: String) -> Self {
++        self.data.description = Some(description);
++        self
++    }
++}
++
++impl CreateDestinationRequest {
++    pub fn azure(id: DestinationId, azure: AzureDestination) -> Self {
++        Self {
++            data: CreateDestinationData {
++                id,
++                azure: Some(azure),
++                s3: None,
++                description: None,
++            },
++        }
++    }
++
++    pub fn s3(id: DestinationId, s3: S3Destination) -> Self {
++        Self {
++            data: CreateDestinationData {
++                id,
++                azure: None,
++                s3: Some(s3),
++                description: None,
++            },
++        }
++    }
++}
++
++impl RestHttp2 for CreateDestinationRequest {
++    type ResponseData = DestinationData;
++
++    fn to_request(self) -> Request {
++        // PANICS:
++        // The `unwrap` will never panic because `self.data` can always be serialized to JSON.
++        Request::new(Method::POST, BASE_PATH.to_string())
++            .body(serde_json::to_string_pretty(&json!({"data":self.data})).unwrap())
++    }
++}
++
++#[derive(Debug, Default)]
++pub struct ListDestinationsRequest;
++
++impl ListDestinationsRequest {
++    pub fn new() -> Self {
++        Self
++    }
++}
++
++impl RestHttp2 for ListDestinationsRequest {
++    type ResponseData = Vec<DestinationData>;
++
++    fn to_request(self) -> Request {
++        Request::new(Method::GET, BASE_PATH.to_string())
++    }
++}
++
++#[derive(Debug)]
++pub struct UpdateDestinationRequest {
++    id: DestinationId,
++    property: String,
++    data: serde_json::Value,
++}
++
++impl UpdateDestinationRequest {
++    pub fn azure(id: DestinationId, azure: AzureDestination) -> Self {
++        Self {
++            id,
++            property: "azure".to_string(),
++            data: serde_json::to_value(azure).unwrap(),
++        }
++    }
++
++    pub fn description(id: DestinationId, description: String) -> Self {
++        Self {
++            id,
++            property: "description".to_string(),
++            data: serde_json::Value::String(description),
++        }
++    }
++}
++
++impl RestHttp2 for UpdateDestinationRequest {
++    type ResponseData = ();
++
++    fn to_request(self) -> Request {
++        // PANICS:
++        // The `unwrap` will never panic because `self.data` is a `serde_json::Value` which can
++        // always be serialized to JSON.
++        Request::new(
++            Method::PATCH,
++            format!("{BASE_PATH}/{}/{}", self.id.into_string(), self.property),
++        )
++        .body(serde_json::to_string_pretty(&json!({"data":self.data})).unwrap())
++    }
++}
++
++#[derive(Debug)]
++pub struct DeleteDestinationRequest {
++    id: DestinationId,
++}
++
++impl DeleteDestinationRequest {
++    pub fn new(id: DestinationId) -> Self {
++        Self { id }
++    }
++}
++
++impl RestHttp2 for DeleteDestinationRequest {
++    type ResponseData = ();
++
++    fn to_request(self) -> Request {
++        Request::new(
++            Method::DELETE,
++            format!("{BASE_PATH}/{}", self.id.into_string()),
++        )
++    }
++}
+diff --git a/crates/vapix/src/lib.rs b/crates/vapix/src/lib.rs
+index 128f7c1..ca9bfe5 100644
+--- a/crates/vapix/src/lib.rs
++++ b/crates/vapix/src/lib.rs
+@@ -1,5 +1,6 @@
+ pub mod apis;
+ mod axis_cgi;
++pub mod cassette;
+ mod client;
+ mod config;
+ pub mod http;
+@@ -7,11 +8,12 @@ pub mod json_rpc;
+ pub mod json_rpc_http;
+ pub mod rest;
+ pub mod rest_http;
++pub mod rest_http2;
+ mod services;
+ pub mod soap;
+ pub mod soap_http;
+ 
+ pub use axis_cgi::{basic_device_info_1, system_ready_1};
+ pub use client::{Client, ClientBuilder, Scheme};
+-pub use config::{recording_group_1, remote_object_storage_1, ssh_1};
++pub use config::{recording_group_1, remote_object_storage_1, remote_object_storage_1_beta, ssh_1};
+ pub use services::{action1, event1};
+diff --git a/crates/vapix/src/rest.rs b/crates/vapix/src/rest.rs
+index 4d5b287..82beea2 100644
+--- a/crates/vapix/src/rest.rs
++++ b/crates/vapix/src/rest.rs
+@@ -6,8 +6,9 @@ use std::{
+ };
+ 
+ use anyhow::Context;
+-use serde::Deserialize;
+-use serde_json::value::RawValue;
++use log::{error, warn};
++use serde::{Deserialize, Serialize};
++use serde_json::{value::RawValue, Value};
+ 
+ #[derive(Debug, Deserialize)]
+ struct Response<'a> {
+@@ -19,12 +20,46 @@ struct Response<'a> {
+     status: Option<&'a str>,
+ }
+ 
+-#[derive(Debug, Deserialize)]
++/// A list specifying the kind of errors that can occur.
++///
++/// The **current hypothesis** is that these are the same across the device configuration framework.
++#[derive(Clone, Copy, Debug, Eq, PartialEq)]
++#[non_exhaustive]
++pub enum ErrorKind {
++    /// Item does not exist
++    NotFound = 2,
++    /// Validation error
++    ValidationError = 5,
++    /// Item already exists
++    AlreadyExists = 6,
++}
++
++#[derive(Debug, Deserialize, Serialize)]
+ pub struct Error {
+     pub code: u16,
+     message: String,
+ }
+ 
++impl Error {
++    pub fn kind(&self) -> Option<ErrorKind> {
++        match self.code {
++            2 => {
++                debug_assert!(self.message.starts_with("Item does not exist:"));
++                Some(ErrorKind::NotFound)
++            }
++            5 => {
++                debug_assert!(self.message.starts_with("Validation error:"));
++                Some(ErrorKind::ValidationError)
++            }
++            6 => {
++                debug_assert!(self.message.starts_with("Item already exists:"));
++                Some(ErrorKind::AlreadyExists)
++            }
++            _ => None,
++        }
++    }
++}
++
+ impl Display for Error {
+     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+         let Self { code, message } = self;
+@@ -67,17 +102,80 @@ where
+     Ok(Ok(data?))
+ }
+ 
++// The serialization-deserialization round-trip may carry an overhead in terms of CPU, memory and storage.
++// TODO: Consider making this a feature.
++
++fn soft_assert_lossless<T, E>(text: &str, result: &Result<T, E>) -> anyhow::Result<()>
++where
++    T: for<'a> Deserialize<'a> + Serialize,
++    E: for<'a> Deserialize<'a> + Serialize,
++{
++    let Response {
++        data,
++        status: _,
++        error,
++    } = serde_json::from_str(text)
++        .with_context(|| format!("Could not parse response; text: {text}"))?;
++
++    match &result {
++        Ok(d) => {
++            if let Some(data) = data {
++                let actual: Value = serde_json::from_str(&serde_json::to_string(d)?)?;
++                let expected: Value = serde_json::from_str(data.get())?;
++                if actual != expected {
++                    warn!("Data deserialization is not lossless");
++                }
++                debug_assert_eq!(actual, expected);
++            } else {
++                // Deserialization uses "null" when no data is returned,
++                // so it is reasonable to expect that it would serialize back to "null".
++                // TODO: Consider distinguishing between "undefined" and "null".
++                let actual: Value = serde_json::from_str(&serde_json::to_string(d)?)?;
++                let expected = Value::Null;
++                if actual != expected {
++                    warn!("Data deserialization is not lossless (null data)");
++                }
++                debug_assert_eq!(actual, expected);
++            }
++        }
++        Err(e) => {
++            // PANICS:
++            // The `unwrap` will never panic because `parse_data` will return an error only when
++            // the raw response has an error and we are deserializing the same text.
++            let actual: Value = serde_json::from_str(&serde_json::to_string(e)?)?;
++            let expected: Value = serde_json::from_str(error.unwrap().get())?;
++            if actual != expected {
++                warn!("Error deserialization is not lossless");
++            }
++            debug_assert_eq!(actual, expected);
++        }
++    };
++
++    Ok(())
++}
++
++pub fn parse_data_lossless<T>(text: &str) -> anyhow::Result<Result<T, Error>>
++where
++    T: for<'a> Deserialize<'a> + Serialize,
++{
++    let result = parse_data::<T>(text)?;
++
++    if let Err(e) = soft_assert_lossless(text, &result) {
++        error!("Failed to verify losslessness: {e:?}");
++        debug_assert!(false);
++    }
++
++    Ok(result)
++}
++
+ #[cfg(test)]
+ mod tests {
+     use super::*;
+ 
+     #[test]
+     fn can_parse_null_data() {
+-        assert_eq!(
+-            parse_data::<serde_json::Value>(r#"{"status":"success"}"#)
+-                .unwrap()
+-                .unwrap(),
+-            serde_json::Value::Null
+-        );
++        let () = parse_data::<()>(r#"{"status":"success"}"#)
++            .unwrap()
++            .unwrap();
+     }
+ }
+diff --git a/crates/vapix/src/rest_http.rs b/crates/vapix/src/rest_http.rs
+index 04537fc..f00ca75 100644
+--- a/crates/vapix/src/rest_http.rs
++++ b/crates/vapix/src/rest_http.rs
+@@ -8,9 +8,17 @@ use reqwest::{Method, StatusCode};
+ use serde::{Deserialize, Serialize};
+ use serde_json::{json, Value};
+ 
+-use crate::{http::Error, rest, rest::parse_data, Client};
++use crate::{
++    http::Error,
++    rest,
++    rest::{parse_data, parse_data_lossless},
++    Client,
++};
+ 
+-fn from_response<T>(
++// The device configuration API reports status codes both in the HTTP header and in the body.
++// TODO: Consider if there is any value in this.
++
++pub(crate) fn from_response<T>(
+     http_status: StatusCode,
+     text: reqwest::Result<String>,
+ ) -> Result<T, Error<rest::Error>>
+@@ -26,6 +34,22 @@ where
+     Error::flat_result(parse_data(&text))
+ }
+ 
++pub(crate) fn from_response_lossless<T>(
++    http_status: StatusCode,
++    text: reqwest::Result<String>,
++) -> Result<T, Error<rest::Error>>
++where
++    T: for<'a> Deserialize<'a> + Serialize,
++{
++    let text = text
++        .with_context(|| format!("Could not fetch text, status was {http_status}"))
++        .map_err(Error::Transport)?;
++    if cfg!(debug_assertions) {
++        println!("Received {http_status}: {text}");
++    }
++    Error::flat_result(parse_data_lossless(&text))
++}
++
+ pub struct RequestBuilder<T> {
+     path: &'static str,
+     data: Value,
+diff --git a/crates/vapix/src/rest_http2.rs b/crates/vapix/src/rest_http2.rs
+new file mode 100644
+index 0000000..652886f
+--- /dev/null
++++ b/crates/vapix/src/rest_http2.rs
+@@ -0,0 +1,33 @@
++//! Utilities for working with REST-style configuration APIs over HTTP.
++
++use std::future::Future;
++
++use serde::{Deserialize, Serialize};
++
++use crate::{
++    cassette::{Cassette, Request, Response},
++    http::Error,
++    rest,
++    rest_http::from_response_lossless,
++    Client,
++};
++
++// As a user of the request builders, I find having to import the correct trait annoying.
++// TODO: Consider consolidating traits or implementing send directly on the request types.
++
++pub trait RestHttp2: Send + Sized {
++    type ResponseData: for<'a> Deserialize<'a> + Serialize;
++
++    fn to_request(self) -> Request;
++
++    fn send(
++        self,
++        client: &Client,
++        cassette: Option<&mut Cassette>,
++    ) -> impl Future<Output = Result<Self::ResponseData, Error<rest::Error>>> + Send {
++        async move {
++            let Response { status, body } = self.to_request().send(client, cassette).await?;
++            from_response_lossless(status, body)
++        }
++    }
++}
+diff --git a/crates/vapix/tests/cassette_tests.rs b/crates/vapix/tests/cassette_tests.rs
+new file mode 100644
+index 0000000..3c9937e
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests.rs
+@@ -0,0 +1,330 @@
++use std::{fs, path::PathBuf};
++
++use anyhow::Context;
++use log::LevelFilter;
++use rs4a_vapix::{
++    apis,
++    basic_device_info_1::UnrestrictedProperties,
++    cassette::{Cassette, Mode},
++    http,
++    json_rpc_http::JsonRpcHttp,
++    remote_object_storage_1_beta::{
++        AzureDestination, CreateDestinationRequest, DeleteDestinationRequest, DestinationData,
++        DestinationId, ListDestinationsRequest, UpdateDestinationRequest,
++    },
++    rest::ErrorKind,
++    rest_http2::RestHttp2,
++    Client, ClientBuilder, Scheme,
++};
++use url::{Host, Url};
++// Responses will vary depending on hardware model and software version.
++// Creating a new shelf for each would be unwieldy.
++// TODO: Automatically deduplicate shelves.
++
++// Responses may vary due to time, initial state of the device, test order, etc.
++// Manually determining when cassettes should be updated is tedious and error prone.
++// Furthermore, if cassettes are addressed by their content, it cache hits will suffer.
++// TODO: Automatically deal with non-reproducible responses.
++
++// Not all tests are applicable to all hardware models and all software versions.
++// TODO: Allow tests to filter on device capabilities.
++
++// Keeping track of which shelves pass, fail, or are skipped is difficult when using a loop.
++// TODO: Find a way to report the results from each cassette.
++
++// When a test fails, it may leave resources intact that will cause future runs to fail.
++// This must be cleaned up manually by either removing them individually or resetting the device.
++// This is tedious, but hopefully updating cassettes will be rare.
++// TODO: Avoid manual cleanup.
++
++fn env_flag(key: &'static str) -> bool {
++    match std::env::var(key).as_deref() {
++        Ok("0") => false,
++        Ok("1") => true,
++        Ok(s) => panic!("Expected value '0' or '1' but found '{s}' for {key}"),
++        Err(_) => false,
++    }
++}
++
++fn dummy_client() -> Client {
++    ClientBuilder::new(Host::parse("localhost").unwrap())
++        .build_with_scheme(Scheme::Secure)
++        .unwrap()
++}
++
++#[derive(Clone, Debug)]
++pub struct Library(PathBuf);
++
++impl Library {
++    pub fn new() -> anyhow::Result<Self> {
++        Ok(Self(
++            std::env::current_dir()
++                .context("no current dir")?
++                .join("tests")
++                .join("cassette_tests"),
++        ))
++    }
++}
++
++impl Library {
++    async fn shelf(&self, client: &Client) -> anyhow::Result<Shelf> {
++        let UnrestrictedProperties { prod_nbr, .. } =
++            apis::basic_device_info_1::get_all_unrestricted_properties()
++                .send(client)
++                .await?
++                .property_list;
++
++        Ok(Shelf(self.0.join(prod_nbr)))
++    }
++
++    fn shelves(&self) -> anyhow::Result<Vec<Shelf>> {
++        let mut shelves = Vec::new();
++        for entry in fs::read_dir(self.0.as_path())? {
++            let entry = entry?;
++            if entry.file_type()?.is_dir() {
++                shelves.push(Shelf(entry.path()));
++            }
++        }
++        Ok(shelves)
++    }
++}
++
++struct Shelf(PathBuf);
++
++impl Shelf {
++    fn cassette(&self, name: &'static str, mode: Mode) -> Cassette {
++        Cassette::new(self.0.join(name), mode)
++    }
++}
++
++struct Setup {
++    client: Client,
++    cassettes: Vec<Cassette>,
++}
++
++async fn setup(test_name: &'static str) -> Setup {
++    let _ = env_logger::Builder::new()
++        .filter_level(LevelFilter::Trace)
++        .parse_default_env()
++        .is_test(true)
++        .try_init();
++
++    let library = Library::new().unwrap();
++
++    match env_flag("UPDATE_CASSETTES") {
++        true => {
++            let client = ClientBuilder::from_dut()
++                .unwrap()
++                .unwrap()
++                .with_inner(|b| b.danger_accept_invalid_certs(true))
++                .build_with_automatic_scheme()
++                .await
++                .unwrap();
++            let shelf = library.shelf(&client).await.unwrap();
++
++            let cassette = shelf.cassette(test_name, Mode::Write);
++            cassette.clear().unwrap();
++            Setup {
++                client,
++                cassettes: vec![cassette],
++            }
++        }
++        false => {
++            let client = dummy_client();
++            let shelves = library.shelves().unwrap();
++            let cassettes = shelves
++                .into_iter()
++                .map(|shelf| shelf.cassette(test_name, Mode::Read))
++                .collect();
++            Setup { client, cassettes }
++        }
++    }
++}
++
++#[tokio::test]
++async fn device_configuration_item_does_not_exist() {
++    let Setup { client, cassettes } = setup("device_configuration_item_does_not_exist").await;
++
++    let id = DestinationId::new("my_destination_id".to_string());
++
++    for cassette in cassettes {
++        let mut cassette = Some(cassette);
++
++        let error = DeleteDestinationRequest::new(id.clone())
++            .send(&client, cassette.as_mut())
++            .await
++            .unwrap_err();
++
++        let http::Error::Service(error) = error else {
++            panic!("Expected Service error but got {error:?}");
++        };
++
++        assert_eq!(error.kind().unwrap(), ErrorKind::NotFound);
++    }
++}
++
++#[tokio::test]
++async fn device_configuration_validation_error() {
++    let Setup { client, cassettes } = setup("device_configuration_validation_error").await;
++
++    let id = DestinationId::new("my_destination_id".to_string());
++
++    // Test
++    for cassette in cassettes {
++        let mut cassette = Some(cassette);
++
++        let error = CreateDestinationRequest::azure(
++            id.clone(),
++            AzureDestination::new(
++                "my-container".to_string(),
++                "".to_string(),
++                Url::parse("https://s3.eu-north-1.amazonaws.com").unwrap(),
++            ),
++        )
++        .send(&client, cassette.as_mut())
++        .await
++        .unwrap_err();
++
++        let http::Error::Service(error) = error else {
++            panic!("Expected Service error but got {error:?}");
++        };
++
++        assert_eq!(error.kind().unwrap(), ErrorKind::ValidationError);
++    }
++}
++
++#[tokio::test]
++async fn device_configuration_item_already_exists() {
++    let Setup { client, cassettes } = setup("device_configuration_item_already_exists").await;
++
++    let id = DestinationId::new("my_destination_id".to_string());
++
++    // Test
++    for cassette in cassettes {
++        let mut cassette = Some(cassette);
++
++        let DestinationData { .. } = CreateDestinationRequest::azure(
++            id.clone(),
++            AzureDestination::new(
++                "my-container".to_string(),
++                "my-sas".to_string(),
++                Url::parse("https://s3.eu-north-1.amazonaws.com").unwrap(),
++            ),
++        )
++        .send(&client, cassette.as_mut())
++        .await
++        .unwrap();
++
++        let error = CreateDestinationRequest::azure(
++            id.clone(),
++            AzureDestination::new(
++                "my-container".to_string(),
++                "my-sas".to_string(),
++                Url::parse("https://s3.eu-north-1.amazonaws.com").unwrap(),
++            ),
++        )
++        .send(&client, cassette.as_mut())
++        .await
++        .unwrap_err();
++
++        let http::Error::Service(error) = error else {
++            panic!("Expected Service error but got {error:?}");
++        };
++
++        assert_eq!(error.kind().unwrap(), ErrorKind::AlreadyExists);
++
++        // Cleanup
++
++        // Leaving the destination behind may affect other tests, even if we didn't reuse it.
++        // But we don't really need this last track on the cassette.
++        // TODO: Consider running this only when recording and excluding it from the cassette.
++
++        DeleteDestinationRequest::new(id.clone())
++            .send(&client, cassette.as_mut())
++            .await
++            .unwrap();
++    }
++}
++
++#[tokio::test]
++async fn remote_object_storage_1_beta_crud() {
++    let Setup { client, cassettes } = setup("remote_object_storage_1_beta_crud").await;
++
++    let id = DestinationId::new("my_destination_id".to_string());
++
++    // Commented out to avoid waiting for failed requests when replaying.
++    // Left in for easier cleanup.
++
++    // let _ = DeleteDestinationRequest::new(id.clone())
++    //     .send(&client, None)
++    //     .await;
++
++    for cassette in cassettes {
++        let mut cassette = Some(cassette);
++
++        // Create
++        let created = CreateDestinationRequest::azure(
++            id.clone(),
++            AzureDestination::new(
++                "my-container".to_string(),
++                "my-sas".to_string(),
++                Url::parse("https://s3.eu-north-1.amazonaws.com").unwrap(),
++            ),
++        )
++        .description("my-description".to_string())
++        .send(&client, cassette.as_mut())
++        .await
++        .unwrap();
++        assert_eq!(&created.id, &id);
++        assert!(created.azure.is_some());
++
++        // List
++        let all = ListDestinationsRequest::new()
++            .send(&client, cassette.as_mut())
++            .await
++            .unwrap();
++        assert!(all.iter().any(|d| d.id == created.id));
++
++        // On at least one occasion when recording, this returned an item does not exist error.
++        // TODO: Consider retrying the request if the destination is not yet available.
++
++        // Update
++        let () = UpdateDestinationRequest::azure(
++            created.id.clone(),
++            AzureDestination {
++                sas: Some("my-updated-sas".to_string()),
++                ..created.azure.unwrap()
++            },
++        )
++        .send(&client, cassette.as_mut())
++        .await
++        .unwrap();
++        // The effect of this update cannot be observed since the sas is redacted.
++
++        let updated_description = format!("{}-updated", created.description.unwrap());
++        let () =
++            UpdateDestinationRequest::description(created.id.clone(), updated_description.clone())
++                .send(&client, cassette.as_mut())
++                .await
++                .unwrap();
++        let all = ListDestinationsRequest::new()
++            .send(&client, cassette.as_mut())
++            .await
++            .unwrap();
++        let updated = all.into_iter().find(|d| d.id == created.id).unwrap();
++        assert_eq!(updated.description.unwrap(), updated_description);
++
++        // Delete
++        let () = DeleteDestinationRequest::new(created.id.clone())
++            .send(&client, cassette.as_mut())
++            .await
++            .unwrap();
++
++        // Verify deletion
++        let all = ListDestinationsRequest::new()
++            .send(&client, cassette.as_mut())
++            .await
++            .unwrap();
++        assert!(!all.iter().any(|d| d.id == created.id));
++    }
++}
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/000-ee7522cab0799274-request b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/000-ee7522cab0799274-request
+new file mode 100644
+index 0000000..df3e68c
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/000-ee7522cab0799274-request
+@@ -0,0 +1,12 @@
++POST config/rest/remote-object-storage/v1beta/destinations
++
++{
++  "data": {
++    "azure": {
++      "container": "my-container",
++      "sas": "my-sas",
++      "url": "https://s3.eu-north-1.amazonaws.com/"
++    },
++    "id": "my_destination_id"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/000-ee7522cab0799274-response b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/000-ee7522cab0799274-response
+new file mode 100644
+index 0000000..564d3aa
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/000-ee7522cab0799274-response
+@@ -0,0 +1,15 @@
++201 Created
++
++{
++  "status": "success",
++  "data": {
++    "azure": {
++      "accountName": "",
++      "container": "my-container",
++      "sas": "*****",
++      "sharedKey": "",
++      "url": "https://s3.eu-north-1.amazonaws.com/"
++    },
++    "id": "my_destination_id"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/001-ee7522cab0799274-request b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/001-ee7522cab0799274-request
+new file mode 100644
+index 0000000..df3e68c
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/001-ee7522cab0799274-request
+@@ -0,0 +1,12 @@
++POST config/rest/remote-object-storage/v1beta/destinations
++
++{
++  "data": {
++    "azure": {
++      "container": "my-container",
++      "sas": "my-sas",
++      "url": "https://s3.eu-north-1.amazonaws.com/"
++    },
++    "id": "my_destination_id"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/001-ee7522cab0799274-response b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/001-ee7522cab0799274-response
+new file mode 100644
+index 0000000..3a824ab
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/001-ee7522cab0799274-response
+@@ -0,0 +1,9 @@
++409 Conflict
++
++{
++  "status": "error",
++  "error": {
++    "code": 6,
++    "message": "Item already exists: destination already exists"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/002-a3de4da543b0a815-request b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/002-a3de4da543b0a815-request
+new file mode 100644
+index 0000000..2f34d3b
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/002-a3de4da543b0a815-request
+@@ -0,0 +1 @@
++DELETE config/rest/remote-object-storage/v1beta/destinations/my_destination_id
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/002-a3de4da543b0a815-response b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/002-a3de4da543b0a815-response
+new file mode 100644
+index 0000000..da388ca
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_already_exists/002-a3de4da543b0a815-response
+@@ -0,0 +1,5 @@
++200 OK
++
++{
++  "status": "success"
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_does_not_exist/000-a3de4da543b0a815-request b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_does_not_exist/000-a3de4da543b0a815-request
+new file mode 100644
+index 0000000..2f34d3b
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_does_not_exist/000-a3de4da543b0a815-request
+@@ -0,0 +1 @@
++DELETE config/rest/remote-object-storage/v1beta/destinations/my_destination_id
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_does_not_exist/000-a3de4da543b0a815-response b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_does_not_exist/000-a3de4da543b0a815-response
+new file mode 100644
+index 0000000..354f245
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_item_does_not_exist/000-a3de4da543b0a815-response
+@@ -0,0 +1,9 @@
++404 Not Found
++
++{
++  "status": "error",
++  "error": {
++    "code": 2,
++    "message": "Item does not exist: destination does not exist"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_validation_error/000-1996683a7c16ece6-request b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_validation_error/000-1996683a7c16ece6-request
+new file mode 100644
+index 0000000..cdce2c6
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_validation_error/000-1996683a7c16ece6-request
+@@ -0,0 +1,12 @@
++POST config/rest/remote-object-storage/v1beta/destinations
++
++{
++  "data": {
++    "azure": {
++      "container": "my-container",
++      "sas": "",
++      "url": "https://s3.eu-north-1.amazonaws.com/"
++    },
++    "id": "my_destination_id"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_validation_error/000-1996683a7c16ece6-response b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_validation_error/000-1996683a7c16ece6-response
+new file mode 100644
+index 0000000..409a995
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/device_configuration_validation_error/000-1996683a7c16ece6-response
+@@ -0,0 +1,9 @@
++400 Bad Request
++
++{
++  "status": "error",
++  "error": {
++    "code": 5,
++    "message": "Validation error: invalid destination configuration: sas cannot be empty if accountname is not set."
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/000-b391856eca471331-request b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/000-b391856eca471331-request
+new file mode 100644
+index 0000000..43a6d49
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/000-b391856eca471331-request
+@@ -0,0 +1,13 @@
++POST config/rest/remote-object-storage/v1beta/destinations
++
++{
++  "data": {
++    "azure": {
++      "container": "my-container",
++      "sas": "my-sas",
++      "url": "https://s3.eu-north-1.amazonaws.com/"
++    },
++    "description": "my-description",
++    "id": "my_destination_id"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/000-b391856eca471331-response b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/000-b391856eca471331-response
+new file mode 100644
+index 0000000..945b84d
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/000-b391856eca471331-response
+@@ -0,0 +1,16 @@
++201 Created
++
++{
++  "status": "success",
++  "data": {
++    "azure": {
++      "accountName": "",
++      "container": "my-container",
++      "sas": "*****",
++      "sharedKey": "",
++      "url": "https://s3.eu-north-1.amazonaws.com/"
++    },
++    "description": "my-description",
++    "id": "my_destination_id"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/001-a19db7f3b617d6d3-request b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/001-a19db7f3b617d6d3-request
+new file mode 100644
+index 0000000..eb32353
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/001-a19db7f3b617d6d3-request
+@@ -0,0 +1 @@
++GET config/rest/remote-object-storage/v1beta/destinations
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/001-a19db7f3b617d6d3-response b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/001-a19db7f3b617d6d3-response
+new file mode 100644
+index 0000000..1ff833b
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/001-a19db7f3b617d6d3-response
+@@ -0,0 +1,29 @@
++200 OK
++
++{
++  "status": "success",
++  "data": [
++    {
++      "azure": {
++        "accountName": "",
++        "container": "my-container",
++        "sas": "*****",
++        "sharedKey": "",
++        "url": "https://s3.eu-north-1.amazonaws.com/"
++      },
++      "description": "my-description",
++      "id": "my_destination_id"
++    },
++    {
++      "id": "smoke_test_recording_destination_1511253",
++      "s3": {
++        "accessKeyId": "*****",
++        "bucket": "myBucket",
++        "region": "",
++        "secretAccessKey": "*****",
++        "sessionToken": "",
++        "url": "https://s3.eu-north-1.amazonaws.com"
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/002-eafc73118da8d7f3-request b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/002-eafc73118da8d7f3-request
+new file mode 100644
+index 0000000..9cdcd6a
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/002-eafc73118da8d7f3-request
+@@ -0,0 +1,11 @@
++PATCH config/rest/remote-object-storage/v1beta/destinations/my_destination_id/azure
++
++{
++  "data": {
++    "accountName": "",
++    "container": "my-container",
++    "sas": "my-updated-sas",
++    "sharedKey": "",
++    "url": "https://s3.eu-north-1.amazonaws.com/"
++  }
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/002-eafc73118da8d7f3-response b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/002-eafc73118da8d7f3-response
+new file mode 100644
+index 0000000..da388ca
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/002-eafc73118da8d7f3-response
+@@ -0,0 +1,5 @@
++200 OK
++
++{
++  "status": "success"
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/003-62deafaf1fe49900-request b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/003-62deafaf1fe49900-request
+new file mode 100644
+index 0000000..62cd5b1
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/003-62deafaf1fe49900-request
+@@ -0,0 +1,5 @@
++PATCH config/rest/remote-object-storage/v1beta/destinations/my_destination_id/description
++
++{
++  "data": "my-description-updated"
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/003-62deafaf1fe49900-response b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/003-62deafaf1fe49900-response
+new file mode 100644
+index 0000000..da388ca
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/003-62deafaf1fe49900-response
+@@ -0,0 +1,5 @@
++200 OK
++
++{
++  "status": "success"
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/004-a19db7f3b617d6d3-request b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/004-a19db7f3b617d6d3-request
+new file mode 100644
+index 0000000..eb32353
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/004-a19db7f3b617d6d3-request
+@@ -0,0 +1 @@
++GET config/rest/remote-object-storage/v1beta/destinations
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/004-a19db7f3b617d6d3-response b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/004-a19db7f3b617d6d3-response
+new file mode 100644
+index 0000000..ac93d4a
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/004-a19db7f3b617d6d3-response
+@@ -0,0 +1,29 @@
++200 OK
++
++{
++  "status": "success",
++  "data": [
++    {
++      "azure": {
++        "accountName": "",
++        "container": "my-container",
++        "sas": "*****",
++        "sharedKey": "",
++        "url": "https://s3.eu-north-1.amazonaws.com/"
++      },
++      "description": "my-description-updated",
++      "id": "my_destination_id"
++    },
++    {
++      "id": "smoke_test_recording_destination_1511253",
++      "s3": {
++        "accessKeyId": "*****",
++        "bucket": "myBucket",
++        "region": "",
++        "secretAccessKey": "*****",
++        "sessionToken": "",
++        "url": "https://s3.eu-north-1.amazonaws.com"
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/005-a3de4da543b0a815-request b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/005-a3de4da543b0a815-request
+new file mode 100644
+index 0000000..2f34d3b
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/005-a3de4da543b0a815-request
+@@ -0,0 +1 @@
++DELETE config/rest/remote-object-storage/v1beta/destinations/my_destination_id
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/005-a3de4da543b0a815-response b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/005-a3de4da543b0a815-response
+new file mode 100644
+index 0000000..da388ca
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/005-a3de4da543b0a815-response
+@@ -0,0 +1,5 @@
++200 OK
++
++{
++  "status": "success"
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/006-a19db7f3b617d6d3-request b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/006-a19db7f3b617d6d3-request
+new file mode 100644
+index 0000000..eb32353
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/006-a19db7f3b617d6d3-request
+@@ -0,0 +1 @@
++GET config/rest/remote-object-storage/v1beta/destinations
+diff --git a/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/006-a19db7f3b617d6d3-response b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/006-a19db7f3b617d6d3-response
+new file mode 100644
+index 0000000..3b1ee60
+--- /dev/null
++++ b/crates/vapix/tests/cassette_tests/M1075-L/remote_object_storage_1_beta_crud/006-a19db7f3b617d6d3-response
+@@ -0,0 +1,18 @@
++200 OK
++
++{
++  "status": "success",
++  "data": [
++    {
++      "id": "smoke_test_recording_destination_1511253",
++      "s3": {
++        "accessKeyId": "*****",
++        "bucket": "myBucket",
++        "region": "",
++        "secretAccessKey": "*****",
++        "sessionToken": "",
++        "url": "https://s3.eu-north-1.amazonaws.com"
++      }
++    }
++  ]
++}
+\ No newline at end of file
+diff --git a/crates/vapix/tests/smoke_tests.rs b/crates/vapix/tests/smoke_tests.rs
+index 10f94e4..c894a4a 100644
+--- a/crates/vapix/tests/smoke_tests.rs
++++ b/crates/vapix/tests/smoke_tests.rs
+@@ -5,7 +5,9 @@ use rs4a_vapix::{
+     action1::Condition,
+     apis,
+     json_rpc_http::{JsonRpcHttp, JsonRpcHttpLossless},
++    remote_object_storage_1_beta::{CreateDestinationRequest, DestinationId, S3Destination},
+     rest_http::RestHttp,
++    rest_http2::RestHttp2,
+     soap_http::SoapHttpRequest,
+     Client, ClientBuilder,
+ };
+@@ -151,24 +153,25 @@ async fn recording_group_1_create_returns_ok() {
+     let expected_recording_destination_id =
+         somewhat_unique_name("smoke_test_recording_destination_");
+ 
+-    let actual_recording_destination_id = apis::remote_object_storage_1::create_destinations()
+-        .data(json!({
+-            "id":expected_recording_destination_id,
+-            "s3": {
+-                "accessKeyId": "myAccessKeyId",
+-                "secretAccessKey": "mySecretAccessKey",
+-                "bucket": "myBucket",
+-                "url": "https://s3.eu-north-1.amazonaws.com",
+-            }
+-        }))
+-        .send(&client)
+-        .await
+-        .unwrap()
+-        .id;
++    let actual_recording_destination_id = CreateDestinationRequest::s3(
++        DestinationId::new(expected_recording_destination_id.clone()),
++        S3Destination {
++            bucket: "myBucket".to_string(),
++            region: None,
++            url: "https://s3.eu-north-1.amazonaws.com".to_string(),
++            access_key_id: Some("myAccessKeyId".to_string()),
++            secret_access_key: Some("mySecretAccessKey".to_string()),
++            session_token: None,
++        },
++    )
++    .send(&client, None)
++    .await
++    .unwrap()
++    .id;
+ 
+     assert_eq!(
+         expected_recording_destination_id,
+-        actual_recording_destination_id
++        actual_recording_destination_id.into_string()
+     );
+ 
+     apis::recording_group_1::create_recording_groups()
+-- 
+2.50.1 (Apple Git-155)
+
