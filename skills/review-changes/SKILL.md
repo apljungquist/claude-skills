@@ -27,12 +27,12 @@ When it comes to tests, quality matters more than quantity.
 
 Use exactly this heading format per finding:
 ```
-### {emoji} [{guideline-code}] `{file}:{line}`
+### {emoji} {number}: [{guideline-code}] `{file}:{line}`
 ```
 
 Example:
 ```
-### 🔴 [A003] `src/auth.rs:88`
+### 🔴 1: [A003] `src/auth.rs:88`
 ```
 
 If no existing _guideline-code_ applies, make up a descriptive identifier.

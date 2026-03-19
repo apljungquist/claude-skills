@@ -33,12 +33,12 @@ When it comes to tests, quality matters more than quantity.
 
 Use exactly this heading format per finding:
 ```
-### {emoji} `{commit-id}` [{guideline-code}] `{file}:{line}`
+### {emoji} {number}: `{commit-id}` [{guideline-code}] `{file}:{line}`
 ```
 
 Example:
 ```
-### 🔴 `a1b2c3d` [A003] `src/auth.rs:88`
+### 🔴 1: `a1b2c3d` [A003] `src/auth.rs:88`
 ```
 
 If no existing _guideline-code_ applies, make up a descriptive identifier.
