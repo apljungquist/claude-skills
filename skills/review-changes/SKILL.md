@@ -9,7 +9,7 @@ disable-model-invocation: true
 
 Consider the cumulative diff to the merge base:
 ```
-git diff HEAD !`git merge-base origin/HEAD HEAD`
+git diff !`git merge-base origin/HEAD HEAD` HEAD
 ```
 Report any deviations from the guidelines below.
 
