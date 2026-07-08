@@ -10,7 +10,7 @@ The opinions expressed in these skills reflect those of the author.
 - **[review-changes](skills/review-changes/SKILL.md)**
   - Reviews the cumulative diff compared to the merge base.
 - **[reviewing-rust-code](skills/reviewing-rust-code/SKILL.md)**
-  - 12 rules covering logic errors, error handling, API misuse, documentation, naming, API design, and observability.
+  - 13 rules covering logic errors, error handling, API misuse, documentation, naming, API design, and observability.
 - **[reviewing-makefiles](skills/reviewing-makefiles/SKILL.md)** —
   - Rules for Makefile conventions (noun vs verb targets, docstrings, side effects).
 

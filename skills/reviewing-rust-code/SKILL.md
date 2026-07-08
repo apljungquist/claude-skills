@@ -38,6 +38,9 @@ read the full rule file at `reference/<id>.md` (e.g., `reference/RS000.md`).
 - **[RS004](reference/RS004.md)** `comment-restates-code` — Comment inside a function body that restates what the code already says.
   Look for: per-line comments that translate code to English, per-arm comments in `match`.
 
+- **[RS012](reference/RS012.md)** `uninformative-suppression-reason` — Suppression reason that can't be checked (`"safe"`) or doesn't justify the suppression (`"dead code"` restates the lint).
+  Look for: `reason = "safe"`, `reason = "intentional"`, `reason = "false positive"`, reasons that restate the lint.
+
 ### Naming and Clarity
 
 - **[RS005](reference/RS005.md)** `boolean-param-ambiguity` — Public function with bare `bool` parameter whose meaning is unclear at call sites.
