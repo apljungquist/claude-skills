@@ -11,7 +11,7 @@ read the entire module to understand invariants that may depend on the changed c
 
 Consult the rule index below.
 For rules that seem applicable,
-read the full rule file at `rules/<id>.md` (e.g., `rules/L001.md`).
+read the full rule file at `reference/<id>.md` (e.g., `reference/L001.md`).
 
 ## Rule Index
 

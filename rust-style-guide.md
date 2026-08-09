@@ -378,7 +378,7 @@ Comments should explain things that the code cannot. Rust's doc comments (`///`)
 
 **Severity:** Warning
 
-**Rule:** Comments inside function bodies should explain *what* the code is accomplishing or *why* a non-obvious approach was chosen. Do not write comments that restate the code in English.
+**Rule:** Comments inside function bodies should explain *what* the code is accomplishing, or *why* a non-obvious approach is required by a constraint that still holds. Do not write comments that restate the code in English, and do not write comments that describe the change that introduced the code — that belongs in the commit message (see W002, W003, and W004 in the reviewing-information-placement skill).
 
 **Rationale:** The kernel guide says: "you want your comments to tell WHAT your code does, not HOW." A comment that says `// increment counter` above `counter += 1` adds no information and must be maintained alongside the code. When the code changes but the comment doesn't, the comment becomes a lie — which is worse than no comment at all. The failure mode is a codebase full of stale comments that actively mislead readers.
 
